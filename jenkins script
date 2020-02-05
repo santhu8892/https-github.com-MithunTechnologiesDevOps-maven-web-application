@@ -1,0 +1,58 @@
+node
+{
+    echo "GitHub BranhName ${env.BRANCH_NAME}"
+  //echo "Jenkins Job Number ${env.BUILD_NUMBER}"
+  echo "Jenkins Node Name ${env.NODE_NAME}"
+  
+  echo "Jenkins Home ${env.JENKINS_HOME}"
+  echo "Jenkins URL ${env.JENKINS_URL}"
+  echo "JOB Name ${env.JOB_NAME}"
+  
+   properties([
+    buildDiscarder(logRotator(numToKeepStr: '1')),
+    pipelineTriggers([
+        pollSCM('* * * * *')
+    ])
+  ])
+  
+    def mavenHome=tool name: "maven.3.6.3"
+    
+    stage('checkoutcode')
+    
+    {
+        git branch: 'development', credentialsId: '5ce5dd21-08c5-4bc3-95f4-919b1aa2c34f', url: 'https://github.com/santhu8892/https-github.com-MithunTechnologiesDevOps-maven-web-application.git'
+
+    }
+    
+    stage('build')
+    
+    {
+        sh "${mavenHome}/bin/mvn clean package"
+    }
+    
+    stage('build')
+    
+    {
+        sh "${mavenHome}/bin/mvn sonar:sonar"
+    }
+    
+    stage('build')
+    
+    {
+        sh "${mavenHome}/bin/mvn deploy"
+    }
+    
+     stage('uploadartifact')
+     {
+       sshagent(credentials: ['312bd319-b900-428e-845c-280d29ab91ef'], ignoreMissing: true) {
+           sh "scp -o StrictHostKeyChecking=no target/maven-web-application.war ec2-user@13.235.247.189:/opt/apache-tomcat-9.0.30/webapps/"
+           
+       }
+        }
+        
+        stage('email')
+        {
+            emailext body: 'build', replyTo: 'santhoshkumar9845@gmail.com,soumyauniq1@gmail.com,', subject: 'build', to: 'santhoshkumar9845@gmail.com,soumyauniq1@gmail.com,'
+        }
+ 
+}
